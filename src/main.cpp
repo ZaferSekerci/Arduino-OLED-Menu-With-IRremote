@@ -9,12 +9,14 @@
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 int RECV_PIN = 7; // the pin where you connect the output pin of IR sensor
+#define relayPin 8
+#define pirPin 9
 IRrecv irrecv(RECV_PIN);
 decode_results results;
 
-int valA = 30;
-int valB = 60;
-boolean valC;
+int valA = 2;
+int valB = 1;
+boolean valC = false;
 
 char button;
 
@@ -25,6 +27,11 @@ int accumulVal = 0;
 int runMode = 1;
 byte menuCount = 1;
 byte dir = 0;
+
+int relayState = HIGH;
+unsigned long previousMillis = 0;
+unsigned long OffTime;   // milliseconds of off-time
+unsigned long sprayTime; // milliseconds on time
 
 void staticMenu()
 {
@@ -51,7 +58,6 @@ void staticMenu()
     display.setTextColor(BLACK, WHITE);
   else
     display.setTextColor(WHITE);
-
 
   display.setCursor(10, 30);
   display.println("Time: ");
@@ -143,7 +149,7 @@ void irReceive()
 
 void resetVal()
 {
-  for (int i = 0; i < sizeof(strValue); i++)
+  for (unsigned int i = 0; i < sizeof(strValue); i++)
   {
     strValue[i] = ' ';
   }
@@ -193,14 +199,14 @@ void menuCheck()
       index = 0;
     }
     button = ' ';
-    accumulVal = atoi(strValue);
+    //accumulVal = atoi(strValue);
     switch (menuCount)
     {
     case 1:
-      valA = accumulVal;
+      valA = atoi(strValue);
       break;
     case 2:
-      valB = accumulVal;
+      valB = atoi(strValue);
       break;
     default:
       break;
@@ -212,11 +218,11 @@ void menuCheck()
     switch (menuCount)
     {
     case 1:
-      valA = accumulVal;
+      sprayTime = valA * 1000;
       runMode = 1;
       break;
     case 2:
-      valB = accumulVal;
+      OffTime = valB * 1000;
       runMode = 2;
       break;
     case 3:
@@ -235,19 +241,53 @@ void setup()
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.clearDisplay();
   display.display();
-  delay(2000); // Pause for 2 seconds
+  //delay(2000); // Pause for 2 seconds
   irrecv.enableIRIn();
-  Serial.begin(9600);
-  pinMode(8, OUTPUT);
-  pinMode(9, OUTPUT);
+  pinMode(relayPin, OUTPUT);
+  pinMode(pirPin, INPUT);
+  digitalWrite(relayPin, relayState);
 }
 
 void loop()
 {
+  unsigned long currentMillis = millis();
   staticMenu();
   irReceive();
   menuCheck();
+  switch (runMode)
+  {
+  case 1:
+    if (digitalRead(pirPin))
+    {
+      
+    }
+    break;
+  case 2:
+    if ((relayState == LOW) && (currentMillis - previousMillis >= sprayTime))
+    {
+      relayState = HIGH;                  // Turn it off
+      previousMillis = currentMillis;     // Remember the time
+      digitalWrite(relayPin, relayState); // Update the actual relay
+    }
+    else if ((relayState == HIGH) && (currentMillis - previousMillis >= OffTime))
+    {
+      relayState = LOW;                   // turn it on
+      previousMillis = currentMillis;     // Remember the time
+      digitalWrite(relayPin, relayState); // Update the actual relay
+    }
+
+    break;
+  case 3:
+    if (valC)
+      digitalWrite(relayPin, LOW);
+    else
+      digitalWrite(relayPin, HIGH);
+    break;
+
+  default:
+    break;
+  }
 
   display.clearDisplay();
-  delay(50);
+  //delay(50);
 }
