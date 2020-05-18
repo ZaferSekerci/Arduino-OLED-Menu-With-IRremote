@@ -259,7 +259,12 @@ void loop()
   case 1:
     if (digitalRead(pirPin))
     {
-      
+      digitalWrite(relayPin, LOW);
+      delay(sprayTime);
+    }
+    else
+    {
+      digitalWrite(relayPin, HIGH);
     }
     break;
   case 2:
