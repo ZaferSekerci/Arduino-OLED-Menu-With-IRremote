@@ -12,73 +12,74 @@ int RECV_PIN = 7; // the pin where you connect the output pin of IR sensor
 IRrecv irrecv(RECV_PIN);
 decode_results results;
 
-int valA;
-int valB;
-int valC;
+int valA = 30;
+int valB = 60;
+boolean valC;
 
 char button;
 
+const int MaxChars = 5;
+char strValue[MaxChars + 1]; // String for 3 digits + null char
+int index = 0;
+int accumulVal = 0;
+int runMode = 1;
 byte menuCount = 1;
 byte dir = 0;
 
 void staticMenu()
 {
+
   display.setTextSize(2);
   display.setTextColor(WHITE);
 
   display.setCursor(10, 0);
-  display.println("Disinfect");
+  display.println("OZGUR");
   //---------------------------------
+  if (runMode == 1)
+    display.setTextColor(BLACK, WHITE);
+  else
+    display.setTextColor(WHITE);
+
   display.setTextSize(1);
   display.setCursor(10, 20);
-  display.println("Sens:");
+  display.println("Sens: ");
   display.setCursor(60, 20);
-  display.println(valA);
+  display.print(valA);
+  display.println(" sn");
+
+  if (runMode == 2)
+    display.setTextColor(BLACK, WHITE);
+  else
+    display.setTextColor(WHITE);
+
 
   display.setCursor(10, 30);
-  display.println("Time:");
+  display.println("Time: ");
   display.setCursor(60, 30);
-  display.println(valB);
+  display.print(valB);
+  display.println(" dk");
+
+  if (runMode == 3)
+    display.setTextColor(BLACK, WHITE);
+  else
+    display.setTextColor(WHITE);
 
   display.setCursor(10, 40);
-  display.println("Value C:");
+  display.println("Surekli: ");
   display.setCursor(60, 40);
-  display.println(valC);
+  if (valC)
+  {
+    display.println("Aktif");
+  }
+  else
+  {
+    display.println("Pasif");
+  }
 
   display.setCursor(2, (menuCount * 10) + 10);
   display.println(">");
 
   display.display();
-}
-
-void menuCheck()
-{
-  //down button routine
-  if (button == 'd' && menuCount < 3)
-  {
-    menuCount++;
-    button = ' ';
-  }
-  if (button == 'd' && menuCount >= 3)
-  {
-    menuCount = 1;
-    button = ' ';
-  }
-  //up button routine
-  if (button == 'u' && menuCount > 1)
-  {
-    menuCount--;
-    button = ' ';
-  }
-  if (button == 'u' && menuCount <= 1)
-  {
-    menuCount = 3;
-    button = ' ';
-  }
-
-  if (button == 'o')
-  {
-  }
 }
 
 void irReceive()
@@ -137,9 +138,98 @@ void irReceive()
       break;
     }
     irrecv.resume();
-    Serial.println(value);
   }
 }
+
+void resetVal()
+{
+  for (int i = 0; i < sizeof(strValue); i++)
+  {
+    strValue[i] = ' ';
+  }
+  index = 0;
+}
+
+void menuCheck()
+{
+  //down button routine
+  if (button == 'd' && menuCount < 3)
+  {
+    menuCount++;
+    button = ' ';
+    resetVal();
+  }
+  if (button == 'd' && menuCount >= 3)
+  {
+    menuCount = 1;
+    button = ' ';
+    resetVal();
+  }
+  //up button routine
+  if (button == 'u' && menuCount > 1)
+  {
+    menuCount--;
+    button = ' ';
+    resetVal();
+  }
+  if (button == 'u' && menuCount <= 1)
+  {
+    menuCount = 3;
+    button = ' ';
+    resetVal();
+  }
+  /*
+   * Accumulation
+   */
+  if (isDigit(button))
+  {
+    strValue[index] = button; // add the ASCII character to the string
+    if (index < MaxChars - 2)
+    {
+      index++;
+    }
+    else
+    {
+      index = 0;
+    }
+    button = ' ';
+    accumulVal = atoi(strValue);
+    switch (menuCount)
+    {
+    case 1:
+      valA = accumulVal;
+      break;
+    case 2:
+      valB = accumulVal;
+      break;
+    default:
+      break;
+    }
+  }
+  if (button == 'o')
+  {
+    index = 0; // reset index to receive other data
+    switch (menuCount)
+    {
+    case 1:
+      valA = accumulVal;
+      runMode = 1;
+      break;
+    case 2:
+      valB = accumulVal;
+      runMode = 2;
+      break;
+    case 3:
+      runMode = 3;
+      valC = !valC;
+      break;
+    default:
+      break;
+    }
+    button = ' ';
+  }
+}
+
 void setup()
 {
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
@@ -160,6 +250,4 @@ void loop()
 
   display.clearDisplay();
   delay(50);
-
-  delay(500);
 }
