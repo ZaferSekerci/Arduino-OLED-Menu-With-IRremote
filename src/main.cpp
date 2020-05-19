@@ -222,7 +222,7 @@ void menuCheck()
       runMode = 1;
       break;
     case 2:
-      OffTime = valB * 1000;
+      OffTime = valB * 60000;
       runMode = 2;
       break;
     case 3:
