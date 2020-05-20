@@ -1,4 +1,4 @@
-# Arduino-OLED-Menu-With-IRremote
+# Arduino OLED Menu System With IRremote
 
 OLED menu system with IR remote for Arduino
 
